@@ -1,0 +1,22 @@
+# profiles.yml
+default:
+  outputs:
+    dev:
+      type: duckdb
+      path: /app/data/db/dev_data_warehouse.db
+      schema: dev  # Base schema for your dev work
+      threads: 4
+
+    dev_local:
+      type: duckdb
+      path: ../data/db/dev_data_warehouse.db
+      schema: dev  # Base schema for your dev work
+      threads: 4
+      
+    prod:
+      type: duckdb # or snowflake/bigquery
+      path: /app/data/prod_data_warehouse.db
+      schema: analytics # Base schema for production
+      threads: 8
+
+  target: dev # This sets your default environment

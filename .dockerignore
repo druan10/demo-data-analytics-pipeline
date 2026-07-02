@@ -1,0 +1,11 @@
+# Ignore the entire local dashboard work folder from the Docker build context
+dashboard/
+node_modules/
+
+# Also ignore your data warehouse and dbt compilation caches
+data/
+target/
+dbt_packages/
+logs/
+*.db
+*.db.wal

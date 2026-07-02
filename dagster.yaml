@@ -1,0 +1,6 @@
+# Opt out of dagster analytics/telemetry
+telemetry:
+  enabled: false
+# Disable new user experience onboarding popups
+nux:
+  enabled: false

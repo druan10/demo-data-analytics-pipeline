@@ -1,0 +1,27 @@
+name: 'my_dbt_project'
+version: '1.0.0'
+config-version: 2
+
+profile: 'default'
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+analysis-paths: ["analysis"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+    - "target"
+
+models:
+  my_dbt_project:
+    +materialized: table # This keeps your project-wide default as a table
+    
+    # This targets your dbt_project/models/staging/ folder
+    staging:
+      +schema: staging
+      +materialized: view # Staging models are best kept as views to save storage
+    
+    # This targets your dbt_project/models/staging/ folder
+    marts:
+      +schema: marts

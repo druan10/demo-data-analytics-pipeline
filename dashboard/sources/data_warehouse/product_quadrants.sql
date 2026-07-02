@@ -1,0 +1,1 @@
+SELECT * FROM dev_marts.rpt__amazon_product_quadrants

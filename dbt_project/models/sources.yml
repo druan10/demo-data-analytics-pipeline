@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: amazon_ecommerce 
+    # This dynamically switches between 'dev_raw' and 'raw' based on your dbt target
+    # Needed to account for python defined assets (not dbt model assets)
+    schema: "{{ 'dev_raw' if target.name == 'dev' else 'raw' }}"
+    description: "Raw Data"
+    config:
+      meta:
+        dagster:
+          asset_key: ["amazon_ecommerce", "raw", "raw_az_data"]
+    tables:
+      - name: raw_az_data
+        description: "Raw Amazon data ingested into the duckdb warehouse"
+

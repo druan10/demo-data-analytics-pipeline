@@ -1,0 +1,72 @@
+models:
+  - name: dim__amazon_products
+    description: "The primary dimension table for Amazon products, derived from Amazon sample source data."
+    columns:
+      - name: product_id
+        description: "The unique identifier for a product."
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "The descriptive name of the product."
+        tests:
+          - not_null
+      - name: primary_category
+        description: "The absolute top-level category node unpacked from the raw string (e.g., Electronics)."
+        tests:
+          - not_null
+      - name: sub_category
+        description: "The second-level classification node unpacked from the category array."
+  - name: fct__amazon_product_metrics
+    description: "Primary facts table for Amazon products, derived from Amazon sample source data"
+    columns:
+      - name: product_id
+        description: "Foreign key linking back to dim_products."
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_id
+      - name: rating
+        description: "The average rating out of 5 stars."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: "<= 5.0 AND rating >= 0.0"
+      - name: rating_count
+        description: "The average rating out of 5 stars."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: ">= 0"
+      - name: actual_price_inr
+        description: "Original price in INR(Indian Rupees) before discounts are applied."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: ">=0 and actual_price_inr >= discounted_price_inr"
+      - name: actual_price_usd
+        description: "Original price in in USD (US Dollars) before discounts are applied."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: ">=0 and actual_price_usd >= discounted_price_usd"
+      - name: discounted_price_inr
+        description: "The final purchase price in INR(Indian Rupees) after discounts are applied."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: "<= actual_price_inr AND discounted_price_inr >= 0"
+      - name: discounted_price_usd
+        description: "The final purchase price in USD (US Dollars) after discounts are applied."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: "<= actual_price_usd AND discounted_price_usd >= 0"

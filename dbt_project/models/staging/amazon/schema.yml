@@ -1,0 +1,68 @@
+models:
+  - name: stg_az__products
+    description: "Standardized/cleaned silver layer Amazon Data"
+    columns:
+      - name: product_id
+        description: "The unique identifier for a product."
+        tests:
+          - unique
+          - not_null
+      - name: product_name
+        description: "The descriptive name of the product."
+        tests:
+          - not_null
+      - name: primary_category
+        description: "The absolute top-level category node unpacked from the raw string (e.g., Electronics)."
+        tests:
+          - not_null
+      - name: sub_category
+        description: "The second-level classification node unpacked from the category array."
+      - name: rating
+        description: "The average rating out of 5 stars."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: "<= 5.0 AND rating >= 0.0"
+      - name: rating_count
+        description: "The average rating out of 5 stars."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: ">= 0"
+      - name: actual_price_inr
+        description: "Original price before discounts are applied."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: ">=0 and actual_price_inr >= discounted_price_inr"
+      - name: actual_price_usd
+        description: "Original price before discounts are applied."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: ">=0 and actual_price_usd >= discounted_price_usd"
+      - name: discounted_price_inr
+        description: "The final purchase price after discounts are applied."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: "<= actual_price_inr AND discounted_price_inr >= 0"
+      - name: discounted_price_usd
+        description: "The final purchase price after discounts are applied."
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: "<= actual_price_usd AND discounted_price_usd >= 0"
+      - name: discount_percentage
+        description: "Discount percentage as a decimal value"
+        tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+               expression: ">=0 and discount_percentage <=1.0"

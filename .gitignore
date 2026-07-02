@@ -1,0 +1,46 @@
+.vscode/
+
+# === Data & Databases ===
+*.db
+data/*.db.wal
+data/*.db.tmp
+*.csv
+!data/amazon/raw/amazon.csv
+*.parquet
+*.json
+!dbt_project.yml
+!profiles.yml
+
+# === dbt Internal Logs, Caches & Targets ===
+dbt_project/target/          
+dbt_project/logs/
+dbt_project/dbt_packages/
+dbt_project/dbt_modules/
+
+# === Dagster Local Storage ===
+dagster_home/
+storage/                     
+*.log
+
+# Dagster Tracking
+.nux
+.telemetry/
+
+# === Python Caches ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# === Mac/OS Files ===
+.DS_Store
+
+# Evidence BI Dashboard Ignore Rules
+dashboard/.evidence/
+dashboard/node_modules/
+dashboard/.npm/
+dashboard/build/
