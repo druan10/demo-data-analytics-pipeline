@@ -23,7 +23,7 @@ storage/
 *.log
 
 # Dagster Tracking
-.nux
+.nux/
 .telemetry/
 
 # === Python Caches ===
