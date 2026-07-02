@@ -7,7 +7,6 @@ data/*.db.tmp
 *.csv
 !data/amazon/raw/amazon.csv
 *.parquet
-*.json
 !dbt_project.yml
 !profiles.yml
 
