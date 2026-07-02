@@ -16,6 +16,11 @@ COPY . .
 
 # Best Practice: Generate manifest at build time for production speed.
 # This ensures the manifest.json is baked into the image.
+
+# Install deps to avoid fresh build error
+RUN cd dbt_project && dbt deps
+
+# Parse Manifest
 RUN cd dbt_project && dbt parse --profiles-dir .
 
 # 'dagster dev' launches the webserver and the gRPC code server.
