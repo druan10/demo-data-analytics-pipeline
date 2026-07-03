@@ -7,6 +7,35 @@ This repository delivers a lightweight, production-grade data analytics pipeline
 
 The core philosophy centers on extreme simplification: deploying a complete, decoupled modern data stack locally, without incurring cloud provider costs. Built with modularity at its core, individual technologies in this stack can easily be swapped out as organizational scale or requirements change.
 
+# Quick Start Guide
+
+### Prerequisites
+Ensure you have [Docker](https://www.docker.com/) and Docker Compose installed locally.
+
+### 1. Start the Stack
+Spin up the container network:
+
+```bash
+docker-compose up --build
+```
+
+### 2. Access the UIs
+Once initialized, the services are accessible via your browser:
+* **Dagster Orchestrator:** http://localhost:3000/
+* **Evidence Analytics App:** http://localhost:3001/
+
+### 3. Materialize the Assets
+Navigate to the Dagster UI asset graph and trigger a manual run to materialize all assets. This execution sequence will process the sample e-commerce payload through the Raw -> Staging -> Marts data layers, building your physical data schemas inside DuckDB.
+
+### 3. Rebuild Evidence Sources
+To rebuild sources for evidence (once db's are updated), you can either restart the evidence container, or go to the settings page of evidence, and retest/save the existing source. Both of these will essentially rerun ```npm run sources```
+
+To spin down or restart the stack later without rebuild overhead, simply run:
+
+```bash
+docker-compose up
+```
+
 ## Design Philosophy
 
 - **Local-First Modern Data Stack:** Providing a high-performance analytics ecosystem running entirely on local infrastructure.
@@ -171,33 +200,9 @@ class FutureProofVerticalTranslator(DagsterDbtTranslator):
 ### Docker Dev Optimization
 The multi-container configuration is heavily optimized for localized feedback loops. Volume mounting is configured to handle seamless cross-container locks on the target DuckDB `.db` file, while hot-reloading is fully supported inside the Evidence container—meaning UI adjustments display immediately upon saving markdown files.
 
+The github also includes blank duckdb files to make sure the evidence container runs immediately with new builds. This will be adjusted in the future to conform to best practices.
+
 ---
-
-# Quick Start Guide
-
-### Prerequisites
-Ensure you have [Docker](https://www.docker.com/) and Docker Compose installed locally.
-
-### 1. Start the Stack
-Spin up the container network:
-
-```bash
-docker-compose up --build
-```
-
-### 2. Access the UIs
-Once initialized, the services are accessible via your browser:
-* **Dagster Orchestrator:** http://localhost:3000/
-* **Evidence Analytics App:** http://localhost:3001/
-
-### 3. Materialize the Assets
-Navigate to the Dagster UI asset graph and trigger a manual run to materialize all assets. This execution sequence will process the sample e-commerce payload through the Raw -> Staging -> Marts data layers, building your physical data schemas inside DuckDB.
-
-To spin down or restart the stack later without rebuild overhead, simply run:
-
-```bash
-docker-compose up
-```
 
 # Amazon Analytics Use Case
 
