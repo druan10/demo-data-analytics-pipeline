@@ -1,29 +1,33 @@
-
 # Amazon Product Opportunity Analysis
 
-This dashboard identifies high-potential categories, profitable arbitrage targets, and high-risk products to optimize your reselling and sourcing strategy. Original source data includes asins, product name, price and discounted prices (converted from Indian Rupees to USD), as well as rating_count + average rating per asin. This dataset lacks actual sales numbers and individual sales lines so based assumptions on listing data themselves.
+This dashboard categorizes products for review, to help make decisions for reselling on Amazon. Original source data includes asins, product name, price and discounted prices (converted from Indian Rupees to USD), as well as rating_count + average rating per asin. This dataset lacks actual sales numbers and individual sales lines so based assumptions on listing data themselves.
+
+Products are categorized by Business Action Flags, which suggest a potential action based on available data.
+
+Business Action Flags:
+    - Prime Arbitrage Snipe - Products with higher than Average Ratings and Rating Count by category, higher than average volume by category, and currently priced below the average category discount floor
+    - Potential Hidden Gem - Similar to Prime Arbitrage Snipe, only that it has less than average Rating Count by Category
+    - High-Churn Trap - Products with higher price points, but lower ratings based on above average rating count. Items that high change of returns/refunds.
+    - Liquidating / Low Demand - Products with low rating count and large discounts, pointing to items that sellers are trying to liquidate but aren't moving much.
 
 ```sql total_metrics
+-- Overall Metrics
 SELECT
     -- High volume, bad ratings, but listed at a premium price point
     SUM(CASE WHEN business_action_flag = 'High-Churn Trap' THEN 1 ELSE 0 END) AS total_risky_products,
     -- Great ratings, high volume, but currently priced below the normal category discount floor
     SUM(CASE WHEN business_action_flag = 'Prime Arbitrage Snipe' THEN 1 ELSE 0 END) AS arbitrage_snipes,
     -- Great ratings, low review volume 
-    SUM(CASE WHEN category_product_segment = 'High R / Low Qty' THEN 1 ELSE 0 END) AS potential_gems,
+    SUM(CASE WHEN business_action_flag = 'Potential Hidden Gem' THEN 1 ELSE 0 END) AS potential_gems,
     -- Low reviews and deep price cuts usually mean dead stock
     SUM(CASE WHEN business_action_flag = 'Liquidating / Low Demand' THEN 1 ELSE 0 END) AS liquidating_products
 
 FROM data_warehouse.product_quadrants
 ```
-# Global Overview
 
-<BigValue
-    data={total_metrics} 
-    value=total_risky_products 
-    title="Risky products"
-    subtitle="High Demand + Deep Price Cut"
-/>
+---
+
+# Global Product Overview
 
 <BigValue
     data={total_metrics} 
@@ -39,6 +43,13 @@ FROM data_warehouse.product_quadrants
     subtitle="High Rating / Lower Volume"
 />
 
+<BigValue
+    data={total_metrics} 
+    value=total_risky_products 
+    title="Risky products"
+    subtitle="High Demand + Deep Price Cut"
+/>
+
 <BigValue 
     data={total_metrics} 
     value=liquidating_products 
@@ -46,10 +57,9 @@ FROM data_warehouse.product_quadrants
     subtitle="High Discounts and below average rating"
 />
 
-# Category Action Flag Breakdown (Unfiltered)
-
-
 ```sql action_flags_by_category
+
+-- Static queue to show how products are doing by category
 SELECT 
     primary_category,
     business_action_flag,
@@ -58,6 +68,7 @@ SELECT
     SUM(COUNT(*)) OVER(PARTITION BY primary_category) AS total_category_products
 FROM data_warehouse.product_quadrants
 WHERE business_action_flag IS NOT NULL
+-- Group by primary category, then action flag
 GROUP BY 1, 2
 ORDER BY total_category_products DESC, product_count DESC
 ```
@@ -69,13 +80,16 @@ ORDER BY total_category_products DESC, product_count DESC
     series=business_action_flag
     swapXY=true
     stack=true
-    title="Action Flags Distribution per Category"
+    title="Business Action Flags by Category"
     xlabel="Number of Products"
 />
 
-## Strategic Planning
-*Use this matrix to identify your next product niche. Filter by category to see the competitive landscape.*
+---
 
+## Product Review Queue
+*Filter by Amazon products by Category, as well as Business Action Flags to get a list of products to review for reselling*
+
+<!-- Get Unique values for categories and business_action_flags to filter the actionable queue and bar chart -->
 ```sql primary_categories
 SELECT DISTINCT
     primary_category
@@ -90,44 +104,29 @@ WHERE business_action_flag IS NOT NULL
 ORDER BY business_action_flag ASC
 ```
 
-```sql category_product_segments
-SELECT DISTINCT category_product_segment 
-    FROM data_warehouse.product_quadrants 
-WHERE category_product_segment IS NOT NULL 
-ORDER BY category_product_segment ASC
-```
-
 ```sql product_quadrants_filtered
+-- Filtered dataset based on what the user wants to review
 SELECT * FROM data_warehouse.product_quadrants
 WHERE primary_category LIKE '${inputs.primary_category.value}'
   AND business_action_flag LIKE '${inputs.business_flag.value}'
-  AND category_product_segment LIKE '${inputs.product_segment.value}'
 ```
 
-<Grid cols={3}>
+<!-- Actual Filter Buttons -->
+<Grid cols={2}>
     <Dropdown data={primary_categories} name=primary_category value=primary_category>
         <DropdownOption value="%" valueLabel="All Primary Categories"/>
     </Dropdown>
 
     <Dropdown data={business_action_flags} name=business_flag value=business_action_flag>
-        <DropdownOption value="%" valueLabel="All Sourcing Flags"/>
-    </Dropdown>
-
-    <Dropdown data={category_product_segments} name=product_segment value=category_product_segment>
-        <DropdownOption value="%" valueLabel="All Volume/Rating Segments"/>
+        <DropdownOption value="%" valueLabel="All Business Action Flags"/>
     </Dropdown>
 </Grid>
 
-```sql business_action_flag_share
-SELECT 
-    business_action_flag as name, 
-    COUNT(*) AS value
-FROM ${product_quadrants_filtered}
-GROUP BY 1
-ORDER BY value DESC
-```
+### 🎯 Product Sourcing Queue
+*This queue prioritizes high-margin arbitrage opportunities*
 
 ```sql actionable_sourcing_queue
+-- List of Products to review, based on filters, with extra data on opporunities
 SELECT 
     product_id AS ASIN,
     product_name AS "Product Name",
@@ -144,10 +143,19 @@ ORDER BY
     -- Prioritize Arbitrage Snipes first, then Hidden Gems
     CASE 
         WHEN business_action_flag = 'Prime Arbitrage Snipe' THEN 1
-        WHEN business_action_flag = 'High R / Low Qty' THEN 2 
+        WHEN business_action_flag = 'Potential Hidden Gem' THEN 2 
         ELSE 3 
     END ASC,
     item_discount_pct DESC
+```
+
+```sql business_action_flag_share
+SELECT 
+    business_action_flag as name, 
+    COUNT(*) AS value
+FROM ${product_quadrants_filtered}
+GROUP BY 1
+ORDER BY value DESC
 ```
 
 ### Business Action Share
@@ -178,21 +186,6 @@ ORDER BY
         }
     ]
 } } />
-
-<ScatterPlot 
-    data={actionable_sourcing_queue}
-    x="Discount Percentage"            
-    y="Arbitrage Spread ($)"              
-    color="Sourcing Flag"
-    size="Reviews Volume"              
-    title="Arbitrage Efficiency: Discount % vs. Dollar Spread"
-    
-/>
-
-
-### Relevant Products
-### 🎯 High-Priority Sourcing & Liquidation Queue
-*This queue prioritizes high-margin arbitrage opportunities and flags dead-stock clearing ranges dynamically based on your filters above.*
 
 <DataTable data={actionable_sourcing_queue} search=true rows=10 rowsPerPage=10 compact=true>
     <Column id="ASIN" width="110px"/>
