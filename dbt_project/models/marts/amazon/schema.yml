@@ -29,14 +29,14 @@ models:
                 to: ref('dim__amazon_products')
                 field: product_id
       - name: rating
-        description: "The average rating out of 5 stars."
+        description: "The average rating out of 5 stars for a specific product."
         tests:
           - not_null
           - dbt_utils.expression_is_true:
               arguments:
                expression: "<= 5.0 AND rating >= 0.0"
       - name: rating_count
-        description: "The average rating out of 5 stars."
+        description: "The average rating out of 5 stars for a specific product."
         tests:
           - not_null
           - dbt_utils.expression_is_true:
