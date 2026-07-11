@@ -1,48 +1,15 @@
 # demo-data-analytics-platform
 Sample Production Data Analytics Pipeline 
 
-## Goal
+# Problem/Goal
+With this repo, I wanted to deliver a simplified data analytics and visualizations platform, for average companies who want to immediately dive into analytics without too much investment. While there are lots of Enterprise solutions that require no server maintenance, many companies might not yet be sure whether they want to invest in these tools, or simply don't have the scale of data required to justify the investment. Many companies can get by with a simple data stack like this to accomplish their business goals.
 
-This repository delivers a lightweight, production-grade data analytics pipeline designed to demonstrate best practices in modern data platform engineering. 
-
-The core philosophy centers on extreme simplification: deploying a complete, decoupled modern data stack locally, without incurring cloud provider costs. Built with modularity at its core, individual technologies in this stack can easily be swapped out as organizational scale or requirements change.
-
-# Quick Start Guide
-
-### Prerequisites
-Ensure you have [Docker](https://www.docker.com/) and Docker Compose installed locally.
-
-### 1. Start the Stack
-Spin up the container network:
-
-```bash
-docker-compose up --build
-```
-
-### 2. Access the UIs
-Once initialized, the services are accessible via your browser:
-* **Dagster Orchestrator:** http://localhost:3000/
-* **Evidence Analytics App:** http://localhost:3001/
-
-### 3. Materialize the Assets
-Navigate to the Dagster UI asset graph and trigger a manual run to materialize all assets. This execution sequence will process the sample e-commerce payload through the Raw -> Staging -> Marts data layers, building your physical data schemas inside DuckDB.
-
-### 3. Rebuild Evidence Sources
-To rebuild sources for evidence (once db's are updated), you can either restart the evidence container, or go to the settings page of evidence, and retest/save the existing source. Both of these will essentially rerun ```npm run sources```
-
-To spin down or restart the stack later without rebuild overhead, simply run:
-
-```bash
-docker-compose up
-```
+This repo is designed primarily as a lightweight, on-prem data analytics pipeline. Data is ingested via python (for now), transformed and staged in a local data warehouse using DBT and DuckDB, and visualized using Evidence. 
 
 ## Design Philosophy
 
-- **Local-First Modern Data Stack:** Providing a high-performance analytics ecosystem running entirely on local infrastructure.
+- **Local-First Modern Data Stack:** Providing a high-performance analytics ecosystem running entirely on local infrastructure. Hoping to extend this to allow the use of Kubernetes to scale properly in the future.
 - **Strict Decoupling:** Enforcing a clean separation of concerns between data ingestion, transformation layers, and business intelligence logic to simplify development and developer onboarding.
-- **Zero Cloud Costs:** Leveraging powerful, open-source, or free-tier community tools to eliminate infrastructure overhead during prototyping and small-to-medium scale applications.
-- **Architectural Scalability:** Utilizing a two-container architecture—one optimized for data orchestration/transformation (Dagster, dbt, DuckDB) and one dedicated to fast frontend data applications (Evidence.dev).
-- **Actionable Insights:** Moving beyond simple data aggregation to deliver strategic analytics frameworks (e.g., quadrant analysis and positioning matrices) that drive real business decisions.
 
 ## Technologies Used
 
@@ -52,39 +19,76 @@ docker-compose up
 - **dbt (dbt-core):** Drives data modeling, transformations, and testing within a unified Medallion architecture.
 - **Evidence.dev:** Acts as the Business Intelligence (BI) application layer, enabling high-performance, responsive reporting applications built entirely using markdown and SQL as code.
 
+# Quick Setup Guide
+
+### Prerequisites
+Ensure you have [Docker](https://www.docker.com/) and Docker Compose installed locally.
+
+## 1. Start the Stack
+Spin up the container network:
+
+```bash
+docker-compose up --build
+```
+
+Note, only Dagster will start successfully, as the required duckdb db's that Evidence needs won't exist yet.
+
+```
+[ ! ] Error connecting to datasource data_warehouse: IO Error: Cannot open database "/app/sources/data_warehouse/db/dev_data_warehouse.db" in read-only mode: database does not exist
+```
+
+### 2. Access Dagster
+Once initialized, the Dagster ui will be available via your browser:
+* **Dagster Orchestrator:** http://localhost:3000/
+
+### 3. Materialize the Assets
+Navigate to the Dagster UI asset graph and trigger a manual run to materialize all assets. This will run the data pipeline and create the db's evidence needs.
+
+### 4. Restart Evidence
+You'll need to restart the Evidence Container to have it load the newly created sources.
+
+```bash
+docker-compose restart evidence_dashboard
+```
+
+You should now be able to access the Evidence Dashboard here:
+
+* **Evidence Analytics App:** http://localhost:3001/
+
+---
+
+In the future, you will only need to run the following to get development back up and running.
+
+```bash
+docker-compose up
+```
+
+# Amazon Analytics Use Case
+
+The Amazon data pipeline takes a sample Amazon Dataset from Kaggle, does some simple cleaning and price conversions, and uses the available data to help suggest products for reselling. This data didn't include actual sales counts, so I used a combination of average review score, review count, MSRP, current discounted price, as well as breakdowns by category to suggest high value resell targets.
+---
+
+### Applied Analytical Frameworks
+
+The pipeline transforms uncleaned catalog attributes into four highly descriptive sourcing segments mapped dynamically in the analytics frontend:
+
+1. **Prime Arbitrage Snipes:** These are products with higher than average prices compared to others in their category, with high ratings, that are also currently selling for prices lower than normal. These have the highest potential profit margins which would be a primary target for dropshipping/reseller businesses.
+2. **Hidden Gems:** Highly rated products that have lower than average ratings. Valuable to look at as these could potentially be good investments, but haven't gotten enough traction just yet.
+3. **High-Churn Traps (Risky Products):** These are products that have high volume, but lower than average ratings. Could be products that are returned/refunded often, which would be good to avoid.
+4. **Liquidating / Low Demand Stock:** These are products that are being heavily discounted with low rating counts, which could indicate low volume, or products that are selling very slowly. Good to avoid as a business could be stuck with dead stock.
+
+---
+
+### Key Application Features Included
+
+- **Dynamic Filtering:** Support for filtering across Product Segments, Sourcing Flags, and Primary Categories.
+- **High-Priority Sourcing Queue:** Provides a list of products to based on your filters. Automatically sorts based on the opportunity/margins.
+
 ---
 
 ## Data Architecture & Lineage
 
 Data flows linearly from source files through progressive ingestion, staging, and modeling layers:
-
-```mermaid
-graph TD
-    %% External Inputs & Outputs
-    csv["Raw CSV Data"]
-    dashboard["Evidence Dashboard"]
-    manual["manual: dbt_build"]
-
-    %% Docker Container Bounding Box
-    subgraph Docker ["Docker / Dagster Container"]
-        ingest("Dagster Ingestion")
-        raw[/"DuckDB Raw (Table)"\]
-        dbt("dbt run / dbt Assets")
-        staging["DuckDB Staging (View)"]
-        marts[/"DuckDB Marts (Table)"\]
-        
-        %% Pipeline Flow
-        ingest --> raw
-        raw --> dbt
-        dbt --> staging
-        staging --> marts
-    end
-
-    %% Wiring it together
-    csv --> ingest
-    manual -.-> dbt
-    marts --> dashboard
-```
 
 ### 1. Raw Layer
 - **Purpose:** Immutable landing zone for source data ingested directly from upstream environments.
@@ -199,40 +203,6 @@ class FutureProofVerticalTranslator(DagsterDbtTranslator):
 
 ### Docker Dev Optimization
 The multi-container configuration is heavily optimized for localized feedback loops. Volume mounting is configured to handle seamless cross-container locks on the target DuckDB `.db` file, while hot-reloading is fully supported inside the Evidence container—meaning UI adjustments display immediately upon saving markdown files.
-
-The github also includes blank duckdb files to make sure the evidence container runs immediately with new builds. This will be adjusted in the future to conform to best practices.
-
----
-
-# Amazon Analytics Use Case
-
-The Amazon data pipeline showcases a complete Business Intelligence application built with **Evidence.dev**, sitting directly on top of the modeled marts-layer data warehouse in DuckDB. 
-
-Because real-world telemetry often lacks transactional line-item histories, this use case demonstrates how to design proxy models to extract competitive merchandising insights from marketplace listing constraints.
-
-### Core Architecture Evaluated
-- **Sourcing Volume Proxy:** Utilizes `rating_count` as a proxy calculation for total consumer engagement and transactional velocity.
-- **Sentiment Metric:** Leverages listing `rating` to evaluate customer satisfaction thresholds.
-- **Pricing Strategy Spreads:** Tracks the spread delta between standard retail targets (`actual_price` / MSRP) and current listing points (`discounted_price`).
-
----
-
-### Applied Analytical Frameworks
-
-The pipeline transforms uncleaned catalog attributes into four highly descriptive sourcing segments mapped dynamically in the analytics frontend:
-
-1. **Prime Arbitrage Snipes:** Identifies premium listings possessing exceptionally strong customer feedback and high purchase volume, but currently trading significantly below their standard market price floor. These represent immediate margin opportunities for dropshipping or retail arbitrage.
-2. **Hidden Gems:** Surfaces high-sentiment inventory (top-tier ratings) that is currently under-exposed or flying under the radar due to a lower overall volume of customer reviews.
-3. **High-Churn Traps (Risky Products):** Flags products maintaining deceptive high-velocity interest but suffering from critically bad customer rating distributions. These indicate systemic product faults or high return-rate profile risks.
-4. **Liquidating / Low Demand Stock:** Uncovers stale stock suffering from extreme discount cuts and low interest metrics—signaling an over-saturated or dead inventory niche.
-
----
-
-### Key Application Features Included
-
-- **Dynamic Cross-Filtering:** Built-in multi-input dropdown components filtering across Product Segments, Macro Sourcing Flags, and parsed Category Breadcrumbs simultaneously.
-- **Arbitrage Efficiency Mapping:** Features an integrated data-driven scatter plot analyzing the interaction between relative discount depth (`Discount Percentage`) against exact absolute profit opportunities (`Arbitrage Spread ($)`), sized by transaction proxies.
-- **High-Priority Sourcing Queue:** Provides an active daily checklist data engine that utilizes structured SQL `CASE WHEN` positioning blocks to automatically surface high-yield arbitrage margins to Row 1. The data view includes dynamic conditional formatting delta bars to instantly highlight margin spreads.
 
 ---
 
