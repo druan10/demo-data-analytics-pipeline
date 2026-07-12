@@ -65,23 +65,24 @@ docker-compose up
 
 # Amazon Analytics Use Case
 
-The Amazon data pipeline takes a sample Amazon Dataset from Kaggle, does some simple cleaning and price conversions, and uses the available data to help suggest products for reselling. This data didn't include actual sales counts, so I used a combination of average review score, review count, MSRP, current discounted price, as well as breakdowns by category to suggest high value resell targets.
----
+The Amazon data pipeline takes a sample Amazon Dataset from Kaggle, does some simple cleaning and standardizations, and uses the available data to help suggest products for reselling. This data didn't include actual sales counts, so I used a combination of average review score, review count, MSRP, current discounted price, as well as breakdowns by category to suggest high value resell targets.
 
-### Applied Analytical Frameworks
-
-The pipeline transforms uncleaned catalog attributes into four highly descriptive sourcing segments mapped dynamically in the analytics frontend:
+The pipeline transforms Amazon Listing Data into actionable Business recommendations for reselling or ignoring particular products. Products are categorized into these Business Action Flags:
 
 1. **Prime Arbitrage Snipes:** These are products with higher than average prices compared to others in their category, with high ratings, that are also currently selling for prices lower than normal. These have the highest potential profit margins which would be a primary target for dropshipping/reseller businesses.
-2. **Hidden Gems:** Highly rated products that have lower than average ratings. Valuable to look at as these could potentially be good investments, but haven't gotten enough traction just yet.
+2. **Potential Hidden Gems:** Highly rated products that have lower than average ratings. Valuable to look at as these could potentially be good investments, but haven't gotten enough traction just yet compared to other products in it's category. 
 3. **High-Churn Traps (Risky Products):** These are products that have high volume, but lower than average ratings. Could be products that are returned/refunded often, which would be good to avoid.
 4. **Liquidating / Low Demand Stock:** These are products that are being heavily discounted with low rating counts, which could indicate low volume, or products that are selling very slowly. Good to avoid as a business could be stuck with dead stock.
 
----
+The dashboard provides a general breakdown of products by category at the top.
 
-### Key Application Features Included
+![Amazon overview](readme_images/amazon_overview.png)
 
-- **Dynamic Filtering:** Support for filtering across Product Segments, Sourcing Flags, and Primary Categories.
+The dashboard then allows you to filter by Business action flag, and provides a list of products, sorted by 
+
+![Business Action Filter](readme_images/product_review_queue.png)
+
+- **Dynamic Filtering:** Support for filtering for Categories and Business Action Flags.
 - **High-Priority Sourcing Queue:** Provides a list of products to based on your filters. Automatically sorts based on the opportunity/margins.
 
 ---
